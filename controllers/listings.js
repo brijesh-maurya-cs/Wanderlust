@@ -60,14 +60,24 @@ module.exports.createListing = async (req, res, next) => {
     return res.redirect("/listings/new");
   }
 
-  let url = req.file.path;
-  let filename = req.file.filename;
+  if (!req.file) {
+  req.flash("error", "Image upload failed!");
+  return res.redirect("/listings/new");
+}
+
+let url = req.file.path;
+let filename = req.file.filename;
+ 
+
+const lon = parseFloat(geoData[0].lon);
+const lat = parseFloat(geoData[0].lat);
+
   const newListing = new Listing(req.body.listing);
   newListing.owner = req.user._id;
   newListing.image = { url, filename };
   newListing.geometry = {
     type: "Point",
-    coordinates: [geoData[0].lon, geoData[0].lat],
+    coordinates:[lon,lat] ,
   };
   newListing.category = req.body.listing.category;
 
@@ -97,9 +107,18 @@ module.exports.updateListing = async (req, res) => {
     { headers: { "User-Agent": "WanderlustApp/1.0" } },
   );
   const geoData = await geoResponse.json();
+
+  if (!geoData || geoData.length === 0) {
+  req.flash("error", "Invalid location!");
+  return res.redirect(`/listings/${id}/edit`);
+}
+
+const lon = parseFloat(geoData[0].lon);
+const lat = parseFloat(geoData[0].lat);
+
   listing.geometry = {
     type: "Point",
-    coordinates: [geoData[0].lon, geoData[0].lat],
+    coordinates: [lon,lat],
   };
   listing.category = req.body.listing.category;
 
