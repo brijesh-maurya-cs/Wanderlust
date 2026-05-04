@@ -1,0 +1,40 @@
+<% layout("/layouts/boilerplate") %>
+
+
+<div class="signup-wrapper">
+  <div class="signup-heading">
+    Welcome to <span>Wanderlust</span> 🌍
+  </div>
+
+  <div class="signup-box">
+    <form action="/signup" method="post" class="needs-validation" novalidate>
+
+      <div class="mb-3">
+        <label for="username" class="form-label">Username</label>
+        <input type="text" name="username" class="form-control" id="username" placeholder="Enter your username" required>
+        <div class="valid-feedback">Looks good!</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input type="email" name="email" class="form-control" id="email" placeholder="Enter your email" required>
+      </div>
+
+      <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <div class="input-group">
+          <input type="password" name="password" class="form-control" id="password" placeholder="Create a password" required>
+          <button class="btn btn-outline-secondary" type="button" id="togglePassword">👁️</button>
+        </div>
+      </div> 
+
+      <button class="btn btn-success" type="submit">Create Account</button>
+
+    </form>
+
+    <div class="divider">or</div>
+    <div class="login-text">
+      Already have an account? <a href="/login">Log in</a>
+    </div>
+  </div>
+</div>
