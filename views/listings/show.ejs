@@ -83,7 +83,7 @@
 </div>
  <%} %>
 </div>
- <div class="col-8 offset-3 mb-3 map-section"  >
+ <div class="col-6 offset-3 mb-3 map-section"  >
     <h3>Where you'll be</h3>
     <div id="map" >
     </div>
@@ -93,14 +93,13 @@
 
   
 
+
 <script>
-const listingCoords = <%-  
-(listing.geometry &&
- listing.geometry.coordinates[0] !== 0 &&
- listing.geometry.coordinates[1] !== 0)
+const listingCoords = <%- 
+listing.geometry && listing.geometry.coordinates 
 ? JSON.stringify(listing.geometry.coordinates) 
-: JSON.stringify([77.2090, 28.6139]) 
+: JSON.stringify([])
 %>;
 </script>
     
-    <script src="/js/map.js"></script>
+    <script src="/js/map.js"></>

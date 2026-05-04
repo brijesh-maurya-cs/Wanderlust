@@ -56,34 +56,29 @@ module.exports.createListing = async (req, res) => {
       const geoResponse = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${location},${country}&format=json`,
         {
-          headers: {
-            "User-Agent": "WanderlustApp/1.0",
-          },
+          headers: { "User-Agent": "WanderlustApp/1.0" },
         }
       );
 
       if (geoResponse.ok) {
         geoData = await geoResponse.json();
-      } else {
-        console.log("Geo API failed:", geoResponse.status);
       }
     } catch (err) {
       console.log("Geo fetch error:", err);
     }
 
-    // 🔥 fallback geometry
-    let geometry = {
-      type: "Point",
-      coordinates: [0, 0],
-    };
+    let geometry = null;
 
     if (geoData.length > 0) {
       const lon = parseFloat(geoData[0].lon);
       const lat = parseFloat(geoData[0].lat);
-      geometry.coordinates = [lon, lat];
+
+      geometry = {
+        type: "Point",
+        coordinates: [lon, lat],
+      };
     }
 
-    // 🔥 image check
     if (!req.file) {
       req.flash("error", "Image upload failed!");
       return res.redirect("/listings/new");
@@ -95,7 +90,11 @@ module.exports.createListing = async (req, res) => {
       url: req.file.path,
       filename: req.file.filename,
     };
-    newListing.geometry = geometry;
+
+    if (geometry) {
+      newListing.geometry = geometry;
+    }
+
     newListing.category = req.body.listing.category;
 
     await newListing.save();
@@ -136,9 +135,7 @@ module.exports.updateListing = async (req, res) => {
       const geoResponse = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${location},${country}&format=json`,
         {
-          headers: {
-            "User-Agent": "WanderlustApp/1.0",
-          },
+          headers: { "User-Agent": "WanderlustApp/1.0" },
         }
       );
 
@@ -149,18 +146,22 @@ module.exports.updateListing = async (req, res) => {
       console.log("Geo error:", err);
     }
 
-    let geometry = {
-      type: "Point",
-      coordinates: [0, 0],
-    };
+    let geometry = null;
 
     if (geoData.length > 0) {
       const lon = parseFloat(geoData[0].lon);
       const lat = parseFloat(geoData[0].lat);
-      geometry.coordinates = [lon, lat];
+
+      geometry = {
+        type: "Point",
+        coordinates: [lon, lat],
+      };
     }
 
-    listing.geometry = geometry;
+    if (geometry) {
+      listing.geometry = geometry;
+    }
+
     listing.category = req.body.listing.category;
 
     if (typeof req.file !== "undefined") {

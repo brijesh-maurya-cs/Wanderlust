@@ -1,11 +1,15 @@
-const map = L.map('map', { scrollWheelZoom: false })
-  .setView([listingCoords[1], listingCoords[0]], 10);
+if (!listingCoords || listingCoords.length !== 2) {
+  console.log("No valid coordinates → map not shown");
+} else {
+  const map = L.map('map', { scrollWheelZoom: false })
+    .setView([listingCoords[1], listingCoords[0]], 10);
 
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap'
-}).addTo(map);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
 
-L.marker([listingCoords[1], listingCoords[0]])
-  .addTo(map)
-  .bindPopup("Exact location provided after booking!")
-  .openPopup();
+  L.marker([listingCoords[1], listingCoords[0]])
+    .addTo(map)
+    .bindPopup("Exact location provided after booking!")
+    .openPopup();
+}
