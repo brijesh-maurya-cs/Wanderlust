@@ -1,6 +1,7 @@
 const Listing = require("../Models/listing");
 const { cloudinary } = require("../cloudConfig.js");
 
+
 module.exports.index = async (req, res) => {
   const { category } = req.query;
   const search = req.query.search;
@@ -44,46 +45,69 @@ module.exports.showListing = async (req, res) => {
   res.render("listings/show.ejs", { listing });
 };
 
-module.exports.createListing = async (req, res, next) => {
-  const geoResponse = await fetch(
-    `https://nominatim.openstreetmap.org/search?q=${req.body.listing.location},${req.body.listing.country}&format=json`,
-    {
-      headers: {
-        "User-Agent": "WanderlustApp/1.0",
-      },
-    },
-  );
-  const geoData = await geoResponse.json();
+module.exports.createListing = async (req, res) => {
+  try {
+    const location = encodeURIComponent(req.body.listing.location);
+    const country = encodeURIComponent(req.body.listing.country);
 
-  if (!geoData || geoData.length === 0) {
-    req.flash("error", "Location not found! Please enter a valid location.");
-    return res.redirect("/listings/new");
+    let geoData = [];
+
+    try {
+      const geoResponse = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${location},${country}&format=json`,
+        {
+          headers: {
+            "User-Agent": "WanderlustApp/1.0",
+          },
+        }
+      );
+
+      if (geoResponse.ok) {
+        geoData = await geoResponse.json();
+      } else {
+        console.log("Geo API failed:", geoResponse.status);
+      }
+    } catch (err) {
+      console.log("Geo fetch error:", err);
+    }
+
+    // 🔥 fallback geometry
+    let geometry = {
+      type: "Point",
+      coordinates: [0, 0],
+    };
+
+    if (geoData.length > 0) {
+      const lon = parseFloat(geoData[0].lon);
+      const lat = parseFloat(geoData[0].lat);
+      geometry.coordinates = [lon, lat];
+    }
+
+    // 🔥 image check
+    if (!req.file) {
+      req.flash("error", "Image upload failed!");
+      return res.redirect("/listings/new");
+    }
+
+    const newListing = new Listing(req.body.listing);
+    newListing.owner = req.user._id;
+    newListing.image = {
+      url: req.file.path,
+      filename: req.file.filename,
+    };
+    newListing.geometry = geometry;
+    newListing.category = req.body.listing.category;
+
+    await newListing.save();
+
+    req.flash("success", "New Listing Created!");
+    res.redirect("/listings");
+
+  } catch (err) {
+    console.log("CREATE ERROR:", err);
+    req.flash("error", "Something went wrong!");
+    res.redirect("/listings");
   }
-
-  if (!req.file) {
-  req.flash("error", "Image upload failed!");
-  return res.redirect("/listings/new");
-}
-
-let url = req.file.path;
-let filename = req.file.filename;
- 
-
-const lon = parseFloat(geoData[0].lon);
-const lat = parseFloat(geoData[0].lat);
-
-  const newListing = new Listing(req.body.listing);
-  newListing.owner = req.user._id;
-  newListing.image = { url, filename };
-  newListing.geometry = {
-    type: "Point",
-    coordinates:[lon,lat] ,
-  };
-  newListing.category = req.body.listing.category;
-
-  await newListing.save();
-  req.flash("success", " New Listing Created!");
-  res.redirect("/listings");
 };
 
 module.exports.renderEditForm = async (req, res) => {
@@ -99,41 +123,65 @@ module.exports.renderEditForm = async (req, res) => {
 };
 
 module.exports.updateListing = async (req, res) => {
-  let { id } = req.params;
-  let listing = await Listing.findByIdAndUpdate(id, { ...req.body.listing });
+  try {
+    let { id } = req.params;
+    let listing = await Listing.findByIdAndUpdate(id, { ...req.body.listing });
 
-  const geoResponse = await fetch(
-    `https://nominatim.openstreetmap.org/search?q=${req.body.listing.location},${req.body.listing.country}&format=json`,
-    { headers: { "User-Agent": "WanderlustApp/1.0" } },
-  );
-  const geoData = await geoResponse.json();
+    const location = encodeURIComponent(req.body.listing.location);
+    const country = encodeURIComponent(req.body.listing.country);
 
-  if (!geoData || geoData.length === 0) {
-  req.flash("error", "Invalid location!");
-  return res.redirect(`/listings/${id}/edit`);
-}
+    let geoData = [];
 
-const lon = parseFloat(geoData[0].lon);
-const lat = parseFloat(geoData[0].lat);
+    try {
+      const geoResponse = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${location},${country}&format=json`,
+        {
+          headers: {
+            "User-Agent": "WanderlustApp/1.0",
+          },
+        }
+      );
 
-  listing.geometry = {
-    type: "Point",
-    coordinates: [lon,lat],
-  };
-  listing.category = req.body.listing.category;
+      if (geoResponse.ok) {
+        geoData = await geoResponse.json();
+      }
+    } catch (err) {
+      console.log("Geo error:", err);
+    }
 
-  await listing.save();
+    let geometry = {
+      type: "Point",
+      coordinates: [0, 0],
+    };
 
-  if (typeof req.file !== "undefined") {
-    let url = req.file.path;
-    let filename = req.file.filename;
-    listing.image = { url, filename };
+    if (geoData.length > 0) {
+      const lon = parseFloat(geoData[0].lon);
+      const lat = parseFloat(geoData[0].lat);
+      geometry.coordinates = [lon, lat];
+    }
+
+    listing.geometry = geometry;
+    listing.category = req.body.listing.category;
+
+    if (typeof req.file !== "undefined") {
+      listing.image = {
+        url: req.file.path,
+        filename: req.file.filename,
+      };
+    }
+
     await listing.save();
-  }
 
-  req.flash("success", " Listing Updated!");
-  res.redirect(`/listings/${id}`);
+    req.flash("success", "Listing Updated!");
+    res.redirect(`/listings/${id}`);
+
+  } catch (err) {
+    console.log("UPDATE ERROR:", err);
+    req.flash("error", "Something went wrong!");
+    res.redirect("/listings");
+  }
 };
+
 
 module.exports.destroyListing = async (req, res) => {
   let { id } = req.params;
