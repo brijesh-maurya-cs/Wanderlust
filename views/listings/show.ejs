@@ -27,6 +27,12 @@
 
 <% } %>
 
+<div class="col-8 offset-3 mb-3">
+    <hr>
+    <% if(currentUser) { %>
+        <a href="/listings/<%= listing._id %>/bookings/book" class="btn btn-danger btn-lg">Book This Place</a>
+    <% }  %>        
+</div>
 
 <div class="col-8 offset-3 mb-3 " >
     <% if(currentUser) { %>

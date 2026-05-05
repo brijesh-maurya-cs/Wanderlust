@@ -1,0 +1,40 @@
+<% layout("/layouts/boilerplate") %>
+<div class="row mt-3">
+    <div class="col-8 offset-2">
+        <h3>Confirm Your Booking</h3>
+        <hr>
+        <div class="card mb-3">
+            <div class="row g-0">
+                <div class="col-md-4">
+                    <img src="<%= listing.image.url %>" class="img-fluid rounded-start" alt="...">
+                </div>
+                <div class="col-md-8">
+                    <div class="card-body">
+                        <h5 class="card-title"><%= listing.title %></h5>
+                        <p class="card-text text-muted"><%= listing.location %>, <%= listing.country %></p>
+                        <p class="card-text"><b>Price:</b> &#8377;<%= listing.price.toLocaleString("en-IN") %> / night</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <form action="/listings/<%= listing._id %>/bookings" method="POST" novalidate class="needs-validation">
+            <div class="mb-3">
+                <label for="checkIn" class="form-label">Check-in Date</label>
+                <input type="date" name="booking[checkIn]" id="checkIn" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label for="checkOut" class="form-label">Check-out Date</label>
+                <input type="date" name="booking[checkOut]" id="checkOut" class="form-control" required />
+            </div>
+            <button class="btn btn-danger w-100">Confirm Booking</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Validation to prevent past dates
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('checkIn').setAttribute('min', today);
+    document.getElementById('checkOut').setAttribute('min', today);
+</script>

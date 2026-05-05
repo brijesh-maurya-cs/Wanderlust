@@ -19,6 +19,7 @@ const User = require("./Models/user.js");
 const listingRouter = require("./routes/listing.js");
 const reviewRouter = require("./routes/review.js");
 const userRouter = require("./routes/user.js");
+const bookingRouter = require("./routes/booking.js"); 
 
 app.use(methodOverride("_method"));
 app.use(express.urlencoded({ extended: true }));
@@ -92,7 +93,11 @@ app.use("/listings", listingRouter);
 
 app.use("/listings/:id/reviews", reviewRouter);
 
+app.use("/listings/:id/bookings", bookingRouter)
+
 app.use("/", userRouter);
+
+
 
 app.use((req, res, next) => {
   next(new ExpressError(404, "Page Not Found!"));
