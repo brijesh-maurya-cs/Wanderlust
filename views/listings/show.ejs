@@ -95,8 +95,7 @@
  
 
 <script>
-const listingCoords = <%- 
-listing.geometry && listing.geometry.coordinates 
+const listingCoords = <%- listing.geometry && listing.geometry.coordinates 
 ? JSON.stringify(listing.geometry.coordinates) 
 : JSON.stringify([])
 %>;
