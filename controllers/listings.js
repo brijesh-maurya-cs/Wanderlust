@@ -112,7 +112,10 @@ module.exports.createListing = async (req, res) => {
         coordinates: coords,
       };
     } else {
-      console.log("❌ No coordinates found");
+      newListing.geometry = {
+        type: "Point",
+        coordinates: [78.9629, 20.5937], 
+    };
     }
 
     newListing.category = req.body.listing.category;
@@ -162,6 +165,11 @@ module.exports.updateListing = async (req, res) => {
         type: "Point",
         coordinates: coords,
       };
+    }else {
+      newListing.geometry = {
+        type: "Point",
+        coordinates: [78.9629, 20.5937], 
+    };
     }
 
     listing.category = req.body.listing.category;
