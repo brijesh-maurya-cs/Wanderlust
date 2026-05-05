@@ -12,4 +12,4 @@ if (!listingCoords || listingCoords.length !== 2) {
     .addTo(map)
     .bindPopup("Exact location provided after booking!")
     .openPopup();
-}
+}   
