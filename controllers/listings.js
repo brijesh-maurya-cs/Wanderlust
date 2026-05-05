@@ -1,6 +1,45 @@
 const Listing = require("../Models/listing");
 const { cloudinary } = require("../cloudConfig.js");
 
+const getCoordinates = async (location, country) => {
+  try {
+    const cleanLocation = location.trim().toLowerCase();
+    const cleanCountry = country.trim().toLowerCase();
+
+    let query = encodeURIComponent(`${cleanLocation}, ${cleanCountry}`);
+
+    let res = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`,
+      {
+        headers: { "User-Agent": "WanderlustApp/1.0" },
+      }
+    );
+
+    let data = await res.json();
+
+    if (!data || data.length === 0) {
+      res = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${cleanLocation}&format=json&limit=1`,
+        {
+          headers: { "User-Agent": "WanderlustApp/1.0" },
+        }
+      );
+      data = await res.json();
+    }
+
+    if (data && data.length > 0) {
+      return [
+        parseFloat(data[0].lon),
+        parseFloat(data[0].lat),
+      ];
+    }
+
+    return null;
+  } catch (err) {
+    console.log("Geo error:", err);
+    return null;
+  }
+};
 
 module.exports.index = async (req, res) => {
   const { category } = req.query;
@@ -38,46 +77,21 @@ module.exports.showListing = async (req, res) => {
   const listing = await Listing.findById(id)
     .populate({ path: "reviews", populate: { path: "author" } })
     .populate("owner");
+
   if (!listing) {
     req.flash("error", "Listing you requested for does not exist!");
     return res.redirect("/listings");
   }
+
   res.render("listings/show.ejs", { listing });
 };
 
 module.exports.createListing = async (req, res) => {
   try {
-    const location = encodeURIComponent(req.body.listing.location);
-    const country = encodeURIComponent(req.body.listing.country);
-
-    let geoData = [];
-
-    try {
-      const geoResponse = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${location},${country}&format=json`,
-        {
-          headers: { "User-Agent": "WanderlustApp/1.0" },
-        }
-      );
-
-      if (geoResponse.ok) {
-        geoData = await geoResponse.json();
-      }
-    } catch (err) {
-      console.log("Geo fetch error:", err);
-    }
-
-    let geometry = null;
-
-    if (geoData.length > 0) {
-      const lon = parseFloat(geoData[0].lon);
-      const lat = parseFloat(geoData[0].lat);
-
-      geometry = {
-        type: "Point",
-        coordinates: [lon, lat],
-      };
-    }
+    const coords = await getCoordinates(
+      req.body.listing.location,
+      req.body.listing.country
+    );
 
     if (!req.file) {
       req.flash("error", "Image upload failed!");
@@ -86,13 +100,19 @@ module.exports.createListing = async (req, res) => {
 
     const newListing = new Listing(req.body.listing);
     newListing.owner = req.user._id;
+
     newListing.image = {
       url: req.file.path,
       filename: req.file.filename,
     };
 
-    if (geometry) {
-      newListing.geometry = geometry;
+    if (coords) {
+      newListing.geometry = {
+        type: "Point",
+        coordinates: coords,
+      };
+    } else {
+      console.log("❌ No coordinates found");
     }
 
     newListing.category = req.body.listing.category;
@@ -112,54 +132,36 @@ module.exports.createListing = async (req, res) => {
 module.exports.renderEditForm = async (req, res) => {
   let { id } = req.params;
   let listing = await Listing.findById(id);
+
   if (!listing) {
     req.flash("error", "Listing you requested for does not exist!");
     return res.redirect("/listings");
   }
+
   let originalImageUrl = listing.image.url;
   originalImageUrl = originalImageUrl.replace("/upload", "/upload/w_250");
+
   res.render("listings/edit.ejs", { listing, originalImageUrl });
 };
 
 module.exports.updateListing = async (req, res) => {
   try {
     let { id } = req.params;
-    let listing = await Listing.findByIdAndUpdate(id, { ...req.body.listing });
 
-    const location = encodeURIComponent(req.body.listing.location);
-    const country = encodeURIComponent(req.body.listing.country);
+    let listing = await Listing.findById(id);
 
-    let geoData = [];
+    Object.assign(listing, req.body.listing);
 
-    try {
-      const geoResponse = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${location},${country}&format=json`,
-        {
-          headers: { "User-Agent": "WanderlustApp/1.0" },
-        }
-      );
+    const coords = await getCoordinates(
+      req.body.listing.location,
+      req.body.listing.country
+    );
 
-      if (geoResponse.ok) {
-        geoData = await geoResponse.json();
-      }
-    } catch (err) {
-      console.log("Geo error:", err);
-    }
-
-    let geometry = null;
-
-    if (geoData.length > 0) {
-      const lon = parseFloat(geoData[0].lon);
-      const lat = parseFloat(geoData[0].lat);
-
-      geometry = {
+    if (coords) {
+      listing.geometry = {
         type: "Point",
-        coordinates: [lon, lat],
+        coordinates: coords,
       };
-    }
-
-    if (geometry) {
-      listing.geometry = geometry;
     }
 
     listing.category = req.body.listing.category;
@@ -176,7 +178,6 @@ module.exports.updateListing = async (req, res) => {
     req.flash("success", "Listing Updated!");
     res.redirect(`/listings/${id}`);
 
-    
   } catch (err) {
     console.log("UPDATE ERROR:", err);
     req.flash("error", "Something went wrong!");
@@ -184,10 +185,10 @@ module.exports.updateListing = async (req, res) => {
   }
 };
 
-
 module.exports.destroyListing = async (req, res) => {
   let { id } = req.params;
   let deletedListing = await Listing.findByIdAndDelete(id);
+
   await cloudinary.uploader.destroy(deletedListing.image.filename);
 
   req.flash("success", " Listing Deleted!");
