@@ -166,7 +166,7 @@ module.exports.updateListing = async (req, res) => {
         coordinates: coords,
       };
     }else {
-      newListing.geometry = {
+      listing.geometry = {
         type: "Point",
         coordinates: [78.9629, 20.5937], 
     };
