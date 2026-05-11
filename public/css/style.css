@@ -24,6 +24,18 @@ body{
 
 /* Footer */
 
+.f-info-socials a:nth-child(1) i {
+    color: #1877F2;  /* Facebook Blue */
+}
+
+.f-info-socials a:nth-child(2) i {
+    color: #E1306C;  /* Instagram Pink */
+}
+
+.f-info-socials a:nth-child(3) i {
+    color: #FF0000;  /* YouTube Red */
+}
+
 .f-info-links a{
     text-decoration: none;
     color: #222222;

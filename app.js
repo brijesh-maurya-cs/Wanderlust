@@ -97,6 +97,14 @@ app.use("/listings/:id/bookings", bookingRouter)
 
 app.use("/", userRouter);
 
+app.get("/privacy", (req, res) => {
+    res.render("privacy.ejs");
+});
+
+app.get("/terms", (req, res) => {
+    res.render("terms.ejs");
+});
+
 
 
 app.use((req, res, next) => {
